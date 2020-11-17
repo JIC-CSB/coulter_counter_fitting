@@ -147,3 +147,81 @@ create.comparison.plot <- function(data) {
   
   g
 }
+
+fit.and.compare <- function(data, title) {
+
+  params <- get.fitting.parameters(data)
+
+  mu1 = params$lnorm.mu1
+  s1 = params$lnorm.sigma1
+  mu2 = params$lnorm.mu2
+  s2 = params$lnorm.sigma2
+
+  sd1 = sqrt(log(1 + (s1 ** 2) / (exp(2) * mu1)))
+  sd2 = sqrt(log(1 + (s2 ** 2) / (exp(2) * mu2)))
+  m1 = log(mu1) - (sd1 ** 2) / 2
+  m2 = log(mu2) - (sd2 ** 2) / 2
+
+  fit.ln <- nls(percvol.density ~ (
+    C1 * dlnorm(data$bin.diameter, mean1, sigma1) + 
+      C2 * dlnorm(data$bin.diameter, mean2, sigma2)
+    ),
+    data=data, 
+    start=list(C1=100 * params$lnorm.pi1, mean1=m1, sigma1=sd1, C2=100*params$lnorm.pi2, mean2=m2, sigma2=sd2),
+  )
+  fitted.values <- coef(fit.ln)
+
+  C1.lnorm <- fitted.values['C1']
+  C2.lnorm <- fitted.values['C2']
+  mean1.lnorm <- fitted.values['mean1']
+  mean2.lnorm <- fitted.values['mean2']
+  sigma1.lnorm <- fitted.values['sigma1']
+  sigma2.lnorm <- fitted.values['sigma2']
+  fun1.ln <- function(x) C1.lnorm * dlnorm(x, meanlog=mean1.lnorm, sigma1.lnorm)
+  fun2.ln <- function(x) C2.lnorm * dlnorm(x, meanlog=mean2.lnorm, sigma2.lnorm)
+  fun3.ln <- function(x) fun1.ln(x) + fun2.ln(x) 
+  lnorm.plot <- ggplot(data, aes(x=bin.diameter, y=percvol.density)) +
+    geom_line() +
+    stat_function(fun=fun1.ln, color='blue') +
+    stat_function(fun=fun2.ln, color='red') +
+    stat_function(fun=fun3.ln, color='green') +
+    ggtitle("Lognorm fit")
+
+
+  fit.norm <- nls(percvol.density ~ (
+    C1 * dnorm(data$bin.diameter, mean1, sigma1) + 
+      C2 * dnorm(data$bin.diameter, mean2, sigma2)
+    ),
+    data=data, 
+    start=list(C1=100 * params$norm.pi1, mean1=7, sigma1=2.2, C2=100*params$norm.pi2, mean2=21, sigma2=5.2),
+  )
+  fitted.values <- coef(fit.norm)
+  C1 <- fitted.values['C1']
+  C2 <- fitted.values['C2']
+  mean1 <- fitted.values['mean1']
+  mean2 <- fitted.values['mean2']
+  sigma1 <- fitted.values['sigma1']
+  sigma2 <- fitted.values['sigma2']
+  fun1.n <- function(x) C1 * dnorm(x, mean1, sigma1)
+  fun2.n <- function(x) C2 * dnorm(x, mean2, sigma2)
+  fun3.n <- function(x) fun1.n(x) + fun2.n(x) 
+  norm.plot <- ggplot(data, aes(x=bin.diameter, y=percvol.density)) +
+    geom_line() +
+    stat_function(fun=fun1.n, color='blue') +
+    stat_function(fun=fun2.n, color='red') +
+    stat_function(fun=fun3.n, color='green') +
+    ggtitle("Normal fit")
+
+
+  combined.plot <- ggplot(data, aes(x=bin.diameter, y=percvol.density)) +
+    geom_line() +
+    stat_function(fun=fun3.ln, color='yellow') +
+    stat_function(fun=fun3.n, color='purple') + 
+    ggtitle("Comparison plot")
+
+  grob <- arrangeGrob(lnorm.plot, norm.plot, combined.plot, top=title, nrow=3)
+
+  g <- grid.arrange(grob, ncol=1)
+
+  g
+}
