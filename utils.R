@@ -106,6 +106,10 @@ get.fitting.parameters <- function(data) {
     norm.pi1=norm.fitting.results$parameters$pi[1],
     norm.pi2=norm.fitting.results$parameters$pi[2],
     norm.chisq=norm.fitting.results$chisq,
+    norm.mu1=norm.fitting.results$parameters$mu[1],
+    norm.mu2=norm.fitting.results$parameters$mu[2],
+    norm.sigma1=norm.fitting.results$parameters$sigma[1],
+    norm.sigma2=norm.fitting.results$parameters$sigma[2],
     lnorm.pi1=log.fitting.results$parameters$pi[1],
     lnorm.pi2=log.fitting.results$parameters$pi[2],
     lnorm.chisq=log.fitting.results$chisq,
@@ -168,6 +172,7 @@ fit.and.compare <- function(data, title) {
     ),
     data=data, 
     start=list(C1=100 * params$lnorm.pi1, mean1=m1, sigma1=sd1, C2=100*params$lnorm.pi2, mean2=m2, sigma2=sd2),
+    control = list(maxiter = 5000)
   )
   fitted.values <- coef(fit.ln)
 
@@ -188,12 +193,16 @@ fit.and.compare <- function(data, title) {
     ggtitle("Lognorm fit")
 
 
+  m1 = params$norm.mu1
+  m2 = params$norm.mu2
+  s1 = params$norm.sigma1
+  s2 = params$norm.sigma2
   fit.norm <- nls(percvol.density ~ (
     C1 * dnorm(data$bin.diameter, mean1, sigma1) + 
       C2 * dnorm(data$bin.diameter, mean2, sigma2)
     ),
     data=data, 
-    start=list(C1=100 * params$norm.pi1, mean1=7, sigma1=2.2, C2=100*params$norm.pi2, mean2=21, sigma2=5.2),
+    start=list(C1=100 * params$norm.pi1, mean1=m1, sigma1=s1, C2=100*params$norm.pi2, mean2=m2, sigma2=s2),
   )
   fitted.values <- coef(fit.norm)
   C1 <- fitted.values['C1']

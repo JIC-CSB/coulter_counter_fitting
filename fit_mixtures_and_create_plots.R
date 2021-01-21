@@ -30,10 +30,11 @@ for (i in 1:length(files)) {
 }
 
 for (i in 1:length(files)) {
+  fname <- paste("output/", tools::file_path_sans_ext(basename(basenames[i])), '.pdf', sep='')
+  print(paste("Processing ", fname))
   basename <- tools::file_path_sans_ext(basename(basenames[i]))
   data <- read.coulter.data(files[i])
   plot <- fit.and.compare(data, basename)
-  fname <- paste("output/", tools::file_path_sans_ext(basename(basenames[i])), '.pdf', sep='')
   ggsave(fname, plot)
 }
 
